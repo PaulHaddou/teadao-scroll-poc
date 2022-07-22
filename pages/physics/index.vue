@@ -34,7 +34,7 @@ export default {
       element: canvas,
       engine,
       options: {
-        background: '#D5DAF0',
+        background: 'transparent',
         wireframes: false,
         width: canvasWidth,
         height: canvasHeight
@@ -209,7 +209,6 @@ export default {
       &__canvas{
         width: 700px;
         height: 230px;
-        background-color: blue;
         display: flex;
       }
     }
