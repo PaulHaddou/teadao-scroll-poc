@@ -1,15 +1,13 @@
 <template>
   <div class="physics">
-    <div class="physics__canvas" />
+    <div class="physics__container">
+      <div class="physics__container__canvas" />
+    </div>
   </div>
 </template>
 
 <script>
 import Matter from 'matter-js'
-
-// const paths = [
-//   'M289.05,84.63L98.225,308.136c-6.35,7.44-9.126,17.291-7.594,26.954l10.514,66.144c1.32,8.312,8.484,14.441,16.901,14.44h66.971c9.785,0,19.079-4.283,25.434-11.725l206.015-241.29c5.93-6.943,5.104-17.379-1.841-23.305l-42.83-36.57c-6.946-5.928-17.38-5.104-23.31,1.837l-152.4,178.477c-3.312,3.872-1.941,7.557-0.754,15.562c0.647,4.358,4.409,7.572,8.817,7.528c8.201-0.082,11.959,0.677,15.254-3.186l104.745-122.653l30.031,25.641l-108.396,126.93c-5.823,6.821-14.307,10.795-23.272,10.904h-40.639c-10.349,0.124-19.191-6.943-20.691-17.18l-5.896-40.215c-1.304-8.875,1.292-17.878,7.118-24.697L321.757,75.111c18.261-21.39,50.409-23.929,71.803-5.664l50.576,43.18c21.395,18.265,23.932,50.414,5.666,71.806L235.457,435.479c-10.447,12.243-25.735,19.284-41.83,19.271h-89.321c-19.688-0.012-36.449-14.382-39.549-33.821l-14.072-88.213c-2.53-15.89,2.027-32.097,12.479-44.339L259.017,58.988L289.05,84.63z'
-// ]
 
 export default {
   name: 'IndexPage',
@@ -18,10 +16,14 @@ export default {
     const Render = Matter.Render
     const Runner = Matter.Runner
     const Bodies = Matter.Bodies
+    // const Events = Matter.Events
     const Composite = Matter.Composite
     const MouseConstraint = Matter.MouseConstraint
+    const Common = Matter.Common
+    const Body = Matter.Body
     const Mouse = Matter.Mouse
-    const canvas = document.querySelector('.physics__canvas')
+    const canvas = document.querySelector('.physics__container__canvas')
+    const canvasContainer = document.querySelector('.physics')
     const canvasWidth = canvas.clientWidth
     const canvasHeight = canvas.clientHeight
     // create an engine
@@ -67,8 +69,8 @@ export default {
       {
         name: 'dao-vc',
         width: {
-          mobile: 145,
-          desktop: 97
+          mobile: 97,
+          desktop: 145
         }
       }
     ]
@@ -80,7 +82,11 @@ export default {
         services[i].width.desktop,
         servicesHeightDesktop,
         {
-          slop: 0,
+          slop: 0.5,
+          friction: 1,
+          frictionStatic: Infinity,
+          density: 2,
+          lineWidth: 0,
           render: {
             sprite: {
               texture: './assets/images/home/services/' + services[i].name + '.png',
@@ -123,18 +129,10 @@ export default {
       { isStatic: true }
     )
     boxs.push(wallBottom, wallTop, wallRight, wallLeft)
-    // const boxA = Bodies.rectangle(400, 200, 80, 80, { isStatic: false, illStyle: '#ffffff' })
-    // const boxB = Bodies.rectangle(450, 50, 100, 80, {
-    //   render: {
-    //     strokeStyle: '#000000',
-    //     sprite: {
-    //       texture: './assets/images/home/services/haas.png',
-    //       xScale: 0.25,
-    //       yScale: 0.25,
-    //       restitution: 1
-    //     }
-    //   }
-    // })
+    Composite.add(
+      engine.world,
+      boxs
+    )
 
     // add mouse control
     const mouse = Mouse.create(render.canvas)
@@ -148,15 +146,40 @@ export default {
       }
     })
 
+    const shakeScene = function (engine) {
+      const bodies = Composite.allBodies(engine.world)
+
+      for (let i = 0; i < bodies.length; i++) {
+        const body = bodies[i]
+
+        if (!body.isStatic && body.position.y >= 0) {
+          const forceMagnitude = 0.001 * body.mass * 3
+
+          Body.applyForce(body, body.position, {
+            x: (forceMagnitude + Common.random() * forceMagnitude) * Common.choose([1, -1]),
+            y: -forceMagnitude + Common.random() * -forceMagnitude
+          })
+        }
+      }
+    }
+
+    const onScroll = (e) => {
+      if (window.scrollY > 0 && canvasContainer.offsetHeight + canvasContainer.scrollTop >= canvasContainer.scrollHeight) {
+        if (e.wheelDelta >= 0) {
+          shakeScene(engine)
+        }
+      }
+    }
+    document.addEventListener('wheel', onScroll)
+
     // add all of the bodies to the world
     Composite.add(
       engine.world,
-      boxs,
       mouseConstraint
     )
+    render.mouse = mouse
 
     // run the renderer
-    Render.setPixelRatio(render, 'auto')
     Render.run(render)
 
     // create runner
@@ -175,17 +198,20 @@ export default {
 
   .physics{
     width: 100vw;
+    height: 200vh;
+
+    &__container{
+    width: 100vw;
     height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: -2000;
-
-    &__canvas{
-      width: 700px;
-      height: 230px;
-      background-color: blue;
-      display: flex;
+      &__canvas{
+        width: 700px;
+        height: 230px;
+        background-color: blue;
+        display: flex;
+      }
     }
   }
 </style>
